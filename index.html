@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Phantom">
+<meta name="theme-color" content="#0a0a0a">
+<title>Phantom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.07);
+    --text: #f0f0f0;
+    --muted: #6b6b6b;
+    --green: #00c37a;
+    --red: #ff4757;
+    --accent: #7c6af7;
+    --sol: #9945FF;
+    --usdc: #2775CA;
+    --pol: #8247E5;
+    --sui: #4DA2FF;
+  }
+
+  html, body {
+    height: 100%; width: 100%;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    overflow: hidden;
+  }
+
+  .app {
+    display: flex; flex-direction: column;
+    height: 100vh; max-width: 430px;
+    margin: 0 auto; position: relative;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: env(safe-area-inset-top, 44px) 20px 14px;
+    flex-shrink: 0;
+  }
+  .header-logo {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 18px; font-weight: 700; color: var(--text);
+  }
+  .logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+  .header-actions { display: flex; gap: 14px; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+    color: var(--muted); font-size: 16px;
+  }
+  .icon-btn:active { transform: scale(0.92); background: var(--surface2); }
+
+  /* MAIN SCROLL */
+  .scroll-area {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding-bottom: 80px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* BALANCE SECTION */
+  .balance-section { padding: 20px 24px 24px; text-align: center; }
+  .balance-label { font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .balance-amount {
+    font-size: 38px; font-weight: 700; letter-spacing: -0.02em;
+    font-family: 'DM Mono', monospace;
+    cursor: pointer; transition: opacity 0.15s;
+    line-height: 1.1;
+  }
+  .balance-amount:active { opacity: 0.7; }
+  .balance-change {
+    margin-top: 6px; font-size: 13px; font-family: 'DM Mono', monospace;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .balance-change.negative { color: var(--red); }
+  .balance-change.positive { color: var(--green); }
+
+  /* EDIT MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 100; display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: all; }
+  .modal-sheet {
+    background: var(--surface); border-radius: 24px 24px 0 0;
+    padding: 28px 24px 48px; width: 100%; max-width: 430px;
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+    border-top: 1px solid var(--border);
+  }
+  .modal-overlay.active .modal-sheet { transform: translateY(0); }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 24px; }
+  .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+  .modal-input-group { margin-bottom: 16px; }
+  .modal-input-label { font-size: 12px; color: var(--muted); margin-bottom: 8px; display: block; }
+  .modal-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 15px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .modal-input:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+  .btn-cancel {
+    flex: 1; padding: 14px; border-radius: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); font-size: 15px; font-weight: 500; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-save {
+    flex: 1; padding: 14px; border-radius: 12px;
+    background: var(--accent); border: none;
+    color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-save:active { opacity: 0.85; }
+
+  /* ACTION BUTTONS */
+  .action-row {
+    display: flex; justify-content: space-around;
+    padding: 0 16px 28px;
+  }
+  .action-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .action-btn:active { transform: scale(0.92); }
+  .action-icon {
+    width: 52px; height: 52px; border-radius: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; transition: background 0.15s;
+  }
+  .action-btn:active .action-icon { background: var(--surface2); }
+  .action-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+  /* SECTION CARD */
+  .section-card {
+    margin: 0 16px 12px;
+    background: var(--surface); border-radius: 20px;
+    border: 1px solid var(--border); overflow: hidden;
+  }
+  .section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 18px 12px;
+  }
+  .section-title { font-size: 14px; font-weight: 600; }
+  .section-manage {
+    font-size: 12px; color: var(--accent); font-weight: 500; cursor: pointer;
+  }
+
+  /* PERPS */
+  .perps-content { padding: 0 18px 16px; display: flex; align-items: center; gap: 12px; }
+  .perps-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, #ff6b35, #f7931a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .perps-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  /* TABS */
+  .tabs-header {
+    display: flex; gap: 4px;
+    padding: 16px 18px 0;
+  }
+  .tab-btn {
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    border: none; background: transparent; color: var(--muted);
+    transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+  }
+  .tab-btn.active {
+    background: var(--surface2); color: var(--text);
+  }
+  .tab-more {
+    margin-left: auto; color: var(--muted); font-size: 18px;
+    padding: 0 4px; cursor: pointer; line-height: 1;
+  }
+
+  /* TOKENS */
+  .tokens-list { padding: 8px 0; }
+  .token-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 18px; cursor: pointer; transition: background 0.1s;
+    position: relative;
+  }
+  .token-row:active { background: var(--surface2); }
+  .token-icon {
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; flex-shrink: 0;
+    position: relative; overflow: hidden;
+  }
+  .token-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .token-icon-sol { background: linear-gradient(135deg, #9945FF, #14F195); }
+  .token-icon-usdc { background: linear-gradient(135deg, #2775CA, #5ba0e0); }
+  .token-icon-pol { background: linear-gradient(135deg, #8247E5, #a96ef0); }
+  .token-icon-sui { background: linear-gradient(135deg, #4DA2FF, #7bc0ff); }
+  .token-icon-btc { background: linear-gradient(135deg, #f7931a, #ffb347); }
+  .token-icon-eth { background: linear-gradient(135deg, #627EEA, #8fa8f5); }
+  .token-info { flex: 1; min-width: 0; }
+  .token-name { font-size: 14px; font-weight: 600; }
+  .token-amount { font-size: 12px; color: var(--muted); margin-top: 2px; font-family: 'DM Mono', monospace; }
+  .token-value { text-align: right; flex-shrink: 0; }
+  .token-usd { font-size: 14px; font-weight: 600; font-family: 'DM Mono', monospace; }
+  .token-change { font-size: 11px; margin-top: 2px; font-family: 'DM Mono', monospace; }
+  .token-change.neg { color: var(--red); }
+  .token-change.pos { color: var(--green); }
+  .token-change.zero { color: var(--muted); }
+
+  /* COLLECTIBLES TAB */
+  .collectibles-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 12px; padding: 12px 18px 16px;
+  }
+  .nft-card {
+    background: var(--surface2); border-radius: 16px;
+    overflow: hidden; border: 1px solid var(--border);
+    cursor: pointer; transition: transform 0.15s;
+  }
+  .nft-card:active { transform: scale(0.97); }
+  .nft-img {
+    width: 100%; aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px;
+  }
+  .nft-img-1 { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); }
+  .nft-img-2 { background: linear-gradient(135deg, #2d1b69, #11998e, #38ef7d); }
+  .nft-img-3 { background: linear-gradient(135deg, #fc4a1a, #f7b733); }
+  .nft-img-4 { background: linear-gradient(135deg, #232526, #414345); }
+  .nft-info { padding: 10px 12px; }
+  .nft-name { font-size: 12px; font-weight: 600; }
+  .nft-floor { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* HISTORY TAB */
+  .history-list { padding: 8px 0; }
+  .history-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 18px; cursor: pointer; transition: background 0.1s;
+  }
+  .history-row:active { background: var(--surface2); }
+  .history-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--surface2); display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .history-info { flex: 1; }
+  .history-title { font-size: 14px; font-weight: 500; }
+  .history-date { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .history-amount { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 600; }
+  .history-amount.out { color: var(--red); }
+  .history-amount.inc { color: var(--green); }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    background: rgba(13,13,13,0.92); backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around;
+    padding: 10px 0 28px; z-index: 50;
+  }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer; padding: 6px 20px; border-radius: 12px;
+    transition: all 0.15s; border: none; background: transparent;
+    color: var(--muted);
+  }
+  .nav-btn.active { color: var(--text); }
+  .nav-btn:active { transform: scale(0.9); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-label { font-size: 10px; font-weight: 500; font-family: 'DM Sans', sans-serif; }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* REFRESH ANIMATION */
+  .spin { animation: spin 0.6s linear; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TOAST */
+  .toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: 500;
+    z-index: 200; opacity: 0; transition: all 0.3s; white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* SEARCH */
+  .search-page { padding: 16px; }
+  .search-input-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+  }
+  .search-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 15px; font-family: 'DM Sans', sans-serif;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; font-weight: 600; }
+  .search-token {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 4px; border-bottom: 1px solid var(--border); cursor: pointer;
+  }
+  .search-token:last-child { border-bottom: none; }
+
+  /* SEND/RECEIVE/SWAP modal content */
+  .action-modal-content { padding: 0 0 8px; }
+  .action-modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .address-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    outline: none; margin-bottom: 14px; transition: border-color 0.15s;
+    resize: none; height: 80px;
+  }
+  .address-input:focus { border-color: var(--accent); }
+  .amount-row { display: flex; gap: 10px; margin-bottom: 20px; }
+  .amount-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 18px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .amount-input:focus { border-color: var(--accent); }
+  .currency-badge {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-primary {
+    width: 100%; padding: 16px; border-radius: 14px;
+    background: var(--accent); border: none; color: #fff;
+    font-size: 16px; font-weight: 600; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: opacity 0.15s;
+  }
+  .btn-primary:active { opacity: 0.85; }
+
+  /* QR code placeholder */
+  .qr-placeholder {
+    width: 180px; height: 180px; margin: 0 auto 20px;
+    background: white; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 100px; color: #000;
+  }
+  .wallet-address {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px; text-align: center;
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted);
+    margin-bottom: 16px; letter-spacing: 0.04em; word-break: break-all;
+  }
+
+  /* PERPS full view */
+  .perps-full { padding: 16px; }
+  .perps-chart-placeholder {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; height: 180px; display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px; font-size: 13px; color: var(--muted); flex-direction: column; gap: 8px;
+  }
+  .perps-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .perps-stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 16px;
+  }
+  .perps-stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .perps-stat-value { font-size: 16px; font-weight: 700; font-family: 'DM Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-logo">
+      <div class="logo-dot"></div>
+      <span>Phantom</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="showToast('QR Scanner')">⊡</button>
+      <button class="icon-btn" onclick="switchPage('search')">⌕</button>
+    </div>
+  </div>
+
+  <!-- SCROLL AREA -->
+  <div class="scroll-area" id="mainScroll">
+
+    <!-- HOME PAGE -->
+    <div class="page active" id="page-home">
+
+      <!-- BALANCE -->
+      <div class="balance-section">
+        <div class="balance-label">Total Portfolio</div>
+        <div class="balance-amount" id="balanceDisplay" onclick="openEditModal()">
+          $11,061,196.60
+        </div>
+        <div class="balance-change negative" id="changeDisplay">
+          <span>↓</span>
+          <span id="changeAmt">-$216,889.52</span>
+          <span id="changePct">-1.92%</span>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTONS -->
+      <div class="action-row">
+        <div class="action-btn" onclick="openActionSheet('receive')">
+          <div class="action-icon">⬇</div>
+          <span class="action-label">Receive</span>
+        </div>
+        <div class="action-btn" onclick="openActionSheet('send')">
+          <div class="action-icon">⬆</div>
+          <span class="action-label">Send</span>
+        </div>
+        <div class="action-btn" onclick="openActionSheet('swap')">
+          <div class="action-icon">⇄</div>
+          <span class="action-label">Swap</span>
+        </div>
+        <div class="action-btn" onclick="openActionSheet('buy')">
+          <div class="action-icon">$</div>
+          <span class="action-label">Buy</span>
+        </div>
+      </div>
+
+      <!-- PERPS SECTION -->
+      <div class="section-card">
+        <div class="section-header">
+          <span class="section-title">Perps</span>
+          <span class="section-manage" onclick="switchPage('perps')">Manage</span>
+        </div>
+        <div class="perps-content">
+          <div class="perps-icon">⚡</div>
+          <div class="perps-text">Use perps to trade on an asset's future price with leverage</div>
+        </div>
+      </div>
+
+      <!-- TOKENS SECTION -->
+      <div class="section-card">
+        <div class="tabs-header">
+          <button class="tab-btn active" id="tab-tokens" onclick="switchTab('tokens')">Tokens</button>
+          <button class="tab-btn" id="tab-collectibles" onclick="switchTab('collectibles')">Collectibles</button>
+          <button class="tab-btn" id="tab-defi" onclick="switchTab('defi')">DeFi</button>
+          <span class="tab-more">···</span>
+        </div>
+
+        <!-- TOKENS LIST -->
+        <div id="content-tokens" class="tokens-list">
+          <!-- rendered by JS -->
+        </div>
+
+        <!-- COLLECTIBLES -->
+        <div id="content-collectibles" style="display:none;" class="collectibles-grid">
+          <div class="nft-card">
+            <div class="nft-img nft-img-1">🎭</div>
+            <div class="nft-info"><div class="nft-name">DeGods #4521</div><div class="nft-floor">Floor: 12.4 SOL</div></div>
+          </div>
+          <div class="nft-card">
+            <div class="nft-img nft-img-2">🌀</div>
+            <div class="nft-info"><div class="nft-name">Mad Lads #892</div><div class="nft-floor">Floor: 8.2 SOL</div></div>
+          </div>
+          <div class="nft-card">
+            <div class="nft-img nft-img-3">🔥</div>
+            <div class="nft-info"><div class="nft-name">Okay Bears #77</div><div class="nft-floor">Floor: 5.1 SOL</div></div>
+          </div>
+          <div class="nft-card">
+            <div class="nft-img nft-img-4">💎</div>
+            <div class="nft-info"><div class="nft-name">SMB #1102</div><div class="nft-floor">Floor: 3.9 SOL</div></div>
+          </div>
+        </div>
+
+        <!-- DEFI -->
+        <div id="content-defi" style="display:none;" class="tokens-list">
+          <div class="token-row">
+            <div class="token-icon" style="background:linear-gradient(135deg,#ff6b35,#f7931a);">🌊</div>
+            <div class="token-info">
+              <div class="token-name">Raydium LP</div>
+              <div class="token-amount">SOL-USDC Pool</div>
+            </div>
+            <div class="token-value">
+              <div class="token-usd">$142,880.00</div>
+              <div class="token-change pos">+$892.40</div>
+            </div>
+          </div>
+          <div class="token-row">
+            <div class="token-icon" style="background:linear-gradient(135deg,#00b4db,#0083b0);">🏊</div>
+            <div class="token-info">
+              <div class="token-name">Orca Position</div>
+              <div class="token-amount">SOL-USDT</div>
+            </div>
+            <div class="token-value">
+              <div class="token-usd">$89,200.00</div>
+              <div class="token-change pos">+$441.20</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SWAP PAGE -->
+    <div class="page" id="page-swap">
+      <div style="padding:20px 16px;">
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px;">Swap</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">Trade tokens instantly</div>
+        <div class="section-card" style="padding:20px;margin:0 0 12px;">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">You Pay</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+            <div class="token-icon token-icon-sol" style="width:36px;height:36px;font-size:14px;">◎</div>
+            <div style="font-size:18px;font-weight:700;">SOL</div>
+            <input id="swapFromAmt" type="number" value="10" style="margin-left:auto;background:transparent;border:none;outline:none;color:var(--text);font-family:'DM Mono',monospace;font-size:24px;font-weight:700;text-align:right;width:120px;">
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;">≈ $<span id="swapFromUSD">1,300.00</span></div>
+        </div>
+        <div style="display:flex;justify-content:center;margin:4px 0;">
+          <button onclick="swapTokens()" style="width:40px;height:40px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--accent);font-size:18px;cursor:pointer;">⇅</button>
+        </div>
+        <div class="section-card" style="padding:20px;margin:0 0 24px;">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">You Receive</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+            <div class="token-icon token-icon-usdc" style="width:36px;height:36px;font-size:14px;">$</div>
+            <div style="font-size:18px;font-weight:700;">USDC</div>
+            <div style="margin-left:auto;font-family:'DM Mono',monospace;font-size:24px;font-weight:700;" id="swapToAmt">1,299.35</div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;">Rate: 1 SOL = 129.935 USDC</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:20px;font-size:12px;color:var(--muted);">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>Price Impact</span><span style="color:var(--green);">0.05%</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span>Route</span><span>SOL → USDC</span></div>
+          <div style="display:flex;justify-content:space-between;"><span>Network Fee</span><span>~$0.0005</span></div>
+        </div>
+        <button class="btn-primary" onclick="showToast('Swap executed ✓')">Swap Now</button>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div class="page" id="page-history">
+      <div style="padding:20px 16px;">
+        <div style="font-size:22px;font-weight:700;margin-bottom:4px;">Activity</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">Transaction history</div>
+        <div class="section-card" style="margin:0;">
+          <div class="history-list" id="historyList"><!-- rendered by JS --></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH PAGE -->
+    <div class="page" id="page-search">
+      <div class="search-page">
+        <div class="search-input-wrap">
+          <span style="color:var(--muted);font-size:16px;">⌕</span>
+          <input class="search-input" placeholder="Search tokens, NFTs..." id="searchInput" oninput="filterSearch()">
+        </div>
+        <div class="search-section-title">Trending Tokens</div>
+        <div id="searchResults"></div>
+      </div>
+    </div>
+
+    <!-- PERPS PAGE -->
+    <div class="page" id="page-perps">
+      <div class="perps-full">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+          <button onclick="switchPage('home')" style="background:var(--surface);border:1px solid var(--border);border-radius:50%;width:36px;height:36px;color:var(--muted);cursor:pointer;font-size:16px;">←</button>
+          <div style="font-size:22px;font-weight:700;">Perpetuals</div>
+        </div>
+        <div class="perps-chart-placeholder">
+          <span style="font-size:32px;">📈</span>
+          <span>Connect to view live charts</span>
+        </div>
+        <div class="perps-stat-row">
+          <div class="perps-stat"><div class="perps-stat-label">24h Volume</div><div class="perps-stat-value">$2.4B</div></div>
+          <div class="perps-stat"><div class="perps-stat-label">Open Interest</div><div class="perps-stat-value">$890M</div></div>
+          <div class="perps-stat"><div class="perps-stat-label">Funding Rate</div><div class="perps-stat-value" style="color:var(--green);">+0.01%</div></div>
+          <div class="perps-stat"><div class="perps-stat-label">Max Leverage</div><div class="perps-stat-value">20x</div></div>
+        </div>
+        <button class="btn-primary" onclick="showToast('Perps coming soon')">Start Trading</button>
+      </div>
+    </div>
+
+  </div><!-- end scroll -->
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="nav-home" onclick="switchPage('home')">
+      <span class="nav-icon">⌂</span>
+      <span class="nav-label">Home</span>
+    </button>
+    <button class="nav-btn" id="nav-swap" onclick="switchPage('swap')">
+      <span class="nav-icon">⇄</span>
+      <span class="nav-label">Swap</span>
+    </button>
+    <button class="nav-btn" id="nav-history" onclick="switchPage('history')">
+      <span class="nav-icon">◷</span>
+      <span class="nav-label">Activity</span>
+    </button>
+    <button class="nav-btn" id="nav-search" onclick="switchPage('search')">
+      <span class="nav-icon">⌕</span>
+      <span class="nav-label">Search</span>
+    </button>
+  </div>
+</div>
+
+<!-- EDIT BALANCE MODAL -->
+<div class="modal-overlay" id="editModal" onclick="closeOnOverlay(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Edit Portfolio Balance</div>
+    <div class="modal-input-group">
+      <label class="modal-input-label">Total Balance (USD)</label>
+      <input class="modal-input" id="inputBalance" type="text" placeholder="11,061,196.60">
+    </div>
+    <div class="modal-input-group">
+      <label class="modal-input-label">Change Amount (USD)</label>
+      <input class="modal-input" id="inputChange" type="text" placeholder="-216,889.52">
+    </div>
+    <div class="modal-input-group">
+      <label class="modal-input-label">Change Percentage</label>
+      <input class="modal-input" id="inputPct" type="text" placeholder="-1.92%">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal('editModal')">Cancel</button>
+      <button class="btn-save" onclick="saveBalance()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACTION SHEET MODAL -->
+<div class="modal-overlay" id="actionModal" onclick="closeOnOverlay(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div id="actionModalContent"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────
+const tokens = [
+  { id:'sol', icon:'◎', cls:'token-icon-sol', name:'Solana', ticker:'SOL', amount:'42,733.6', usd:'$8,971,218.94', change:'-$216,667.93', pct:'-2.36%', neg:true },
+  { id:'usdc', icon:'$', cls:'token-icon-usdc', name:'USDC', ticker:'USDC', amount:'2.09M', usd:'$2,089,977.66', change:'+$22.48', pct:'+0.00%', neg:false },
+  { id:'pol', icon:'⬡', cls:'token-icon-pol', name:'Polygon', ticker:'POL', amount:'0', usd:'$0.00', change:'$0.00', pct:'0.00%', neg:null },
+  { id:'sui', icon:'◈', cls:'token-icon-sui', name:'Sui', ticker:'SUI', amount:'0.61', usd:'$0.00', change:'$0.00', pct:'0.00%', neg:null },
+  { id:'btc', icon:'₿', cls:'token-icon-btc', name:'Bitcoin', ticker:'BTC', amount:'0.00124', usd:'$0.00', change:'$0.00', pct:'0.00%', neg:null },
+];
+
+const history = [
+  { icon:'⬆', title:'Send SOL', sub:'To: 7xKp...3mR4', date:'Today, 15:42', amount:'-$1,300.00', cls:'out' },
+  { icon:'⬇', title:'Receive USDC', sub:'From: 9vBq...8kL2', date:'Today, 13:15', amount:'+$5,000.00', cls:'inc' },
+  { icon:'⇄', title:'Swap SOL → USDC', sub:'Jupiter Aggregator', date:'Yesterday, 22:08', amount:'-$2,600.00', cls:'out' },
+  { icon:'⬇', title:'Receive SOL', sub:'From: Exchange', date:'Mar 27, 09:30', amount:'+$130,000.00', cls:'inc' },
+  { icon:'⬆', title:'Send USDC', sub:'To: 3mNq...5pL1', date:'Mar 26, 18:45', amount:'-$500.00', cls:'out' },
+  { icon:'⇄', title:'Swap USDC → SOL', sub:'Raydium', date:'Mar 25, 11:20', amount:'+$3,900.00', cls:'inc' },
+];
+
+const searchTokens = [
+  { icon:'◎', cls:'token-icon-sol', name:'Solana', ticker:'SOL', price:'$209.42', change:'+2.1%', pos:true },
+  { icon:'₿', cls:'token-icon-btc', name:'Bitcoin', ticker:'BTC', price:'$84,200.00', change:'+1.4%', pos:true },
+  { icon:'Ξ', cls:'token-icon-eth', name:'Ethereum', ticker:'ETH', price:'$1,980.00', change:'-0.8%', pos:false },
+  { icon:'$', cls:'token-icon-usdc', name:'USDC', ticker:'USDC', price:'$1.00', change:'0.0%', pos:true },
+  { icon:'⬡', cls:'token-icon-pol', name:'Polygon', ticker:'POL', price:'$0.22', change:'-1.2%', pos:false },
+];
+
+// ─── INIT ────────────────────────────────────────────────
+function renderTokens() {
+  const list = document.getElementById('content-tokens');
+  list.innerHTML = tokens.map(t => `
+    <div class="token-row" onclick="showToast('${t.name} details')">
+      <div class="token-icon ${t.cls}">${t.icon}</div>
+      <div class="token-info">
+        <div class="token-name">${t.name}</div>
+        <div class="token-amount">${t.amount} ${t.ticker}</div>
+      </div>
+      <div class="token-value">
+        <div class="token-usd">${t.usd}</div>
+        <div class="token-change ${t.neg===null?'zero':t.neg?'neg':'pos'}">${t.change}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderHistory() {
+  document.getElementById('historyList').innerHTML = history.map(h => `
+    <div class="history-row">
+      <div class="history-icon">${h.icon}</div>
+      <div class="history-info">
+        <div class="history-title">${h.title}</div>
+        <div class="history-date">${h.sub} • ${h.date}</div>
+      </div>
+      <div class="history-amount ${h.cls}">${h.amount}</div>
+    </div>`).join('');
+}
+
+function renderSearch() {
+  document.getElementById('searchResults').innerHTML = searchTokens.map(t => `
+    <div class="search-token">
+      <div class="token-icon ${t.cls}" style="width:38px;height:38px;font-size:16px;">${t.icon}</div>
+      <div style="flex:1;margin-left:4px;">
+        <div style="font-size:14px;font-weight:600;">${t.name}</div>
+        <div style="font-size:12px;color:var(--muted);">${t.ticker}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:14px;font-weight:600;font-family:'DM Mono',monospace;">${t.price}</div>
+        <div style="font-size:12px;font-family:'DM Mono',monospace;color:${t.pos?'var(--green)':'var(--red)'};">${t.change}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────
+let currentPage = 'home';
+function switchPage(page) {
+  document.getElementById('page-'+currentPage).classList.remove('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  currentPage = page;
+  const el = document.getElementById('page-'+page);
+  if (el) el.classList.add('active');
+  const nav = document.getElementById('nav-'+page);
+  if (nav) nav.classList.add('active');
+  document.getElementById('mainScroll').scrollTop = 0;
+}
+
+// ─── TABS ────────────────────────────────────────────────
+function switchTab(tab) {
+  ['tokens','collectibles','defi'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('content-'+t).style.display = t===tab?'':'none';
+  });
+  if (tab==='collectibles') document.getElementById('content-collectibles').style.display='grid';
+}
+
+// ─── BALANCE EDIT ─────────────────────────────────────────
+function openEditModal() {
+  const bal = document.getElementById('balanceDisplay').textContent.replace('$','').trim();
+  document.getElementById('inputBalance').value = bal;
+  document.getElementById('inputChange').value = document.getElementById('changeAmt').textContent;
+  document.getElementById('inputPct').value = document.getElementById('changePct').textContent;
+  document.getElementById('editModal').classList.add('active');
+}
+function saveBalance() {
+  const bal = document.getElementById('inputBalance').value.trim();
+  const chg = document.getElementById('inputChange').value.trim();
+  const pct = document.getElementById('inputPct').value.trim();
+  if (bal) {
+    document.getElementById('balanceDisplay').textContent = bal.startsWith('$') ? bal : '$'+bal;
+    document.getElementById('changeAmt').textContent = chg;
+    document.getElementById('changePct').textContent = pct;
+    const isNeg = chg.startsWith('-');
+    const changeEl = document.getElementById('changeDisplay');
+    changeEl.className = 'balance-change ' + (isNeg ? 'negative' : 'positive');
+    changeEl.querySelector('span').textContent = isNeg ? '↓' : '↑';
+  }
+  closeModal('editModal');
+  showToast('Balance updated ✓');
+}
+
+// ─── ACTION SHEETS ────────────────────────────────────────
+function openActionSheet(action) {
+  let html = '';
+  if (action === 'receive') {
+    html = `<div class="action-modal-content">
+      <div class="action-modal-title">Receive</div>
+      <div class="qr-placeholder">▦</div>
+      <div class="wallet-address">7xKp9mNv2QsR4tL8wX3cZ6fB1jY5hE0iA</div>
+      <button class="btn-primary" onclick="showToast('Address copied ✓');closeModal('actionModal')">Copy Address</button>
+    </div>`;
+  } else if (action === 'send') {
+    html = `<div class="action-modal-content">
+      <div class="action-modal-title">Send</div>
+      <textarea class="address-input" placeholder="Recipient address or ENS..."></textarea>
+      <div class="amount-row">
+        <input class="amount-input" type="number" placeholder="0.00" value="0">
+        <div class="currency-badge">◎ SOL ▾</div>
+      </div>
+      <button class="btn-primary" onclick="showToast('Transaction sent ✓');closeModal('actionModal')">Review Send</button>
+    </div>`;
+  } else if (action === 'swap') {
+    switchPage('swap'); return;
+  } else if (action === 'buy') {
+    html = `<div class="action-modal-content">
+      <div class="action-modal-title">Buy Crypto</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+        ${['Moonpay','Transak','Coinbase','Stripe'].map(p=>`<div onclick="showToast('Opening ${p}...')" style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;">${p}</div>`).join('')}
+      </div>
+      <button class="btn-primary" onclick="closeModal('actionModal')">Continue</button>
+    </div>`;
+  }
+  document.getElementById('actionModalContent').innerHTML = html;
+  document.getElementById('actionModal').classList.add('active');
+}
+
+// ─── MODAL UTILS ─────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function closeOnOverlay(e) { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('active'); }
+
+// ─── SEARCH ──────────────────────────────────────────────
+function filterSearch() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = q ? searchTokens.filter(t => t.name.toLowerCase().includes(q) || t.ticker.toLowerCase().includes(q)) : searchTokens;
+  document.getElementById('searchResults').innerHTML = filtered.map(t => `
+    <div class="search-token">
+      <div class="token-icon ${t.cls}" style="width:38px;height:38px;font-size:16px;">${t.icon}</div>
+      <div style="flex:1;margin-left:4px;">
+        <div style="font-size:14px;font-weight:600;">${t.name}</div>
+        <div style="font-size:12px;color:var(--muted);">${t.ticker}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:14px;font-weight:600;font-family:'DM Mono',monospace;">${t.price}</div>
+        <div style="font-size:12px;font-family:'DM Mono',monospace;color:${t.pos?'var(--green)':'var(--red)'};">${t.change}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── SWAP ─────────────────────────────────────────────────
+document.addEventListener('input', e => {
+  if (e.target.id === 'swapFromAmt') {
+    const val = parseFloat(e.target.value) || 0;
+    document.getElementById('swapFromUSD').textContent = (val * 130).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('swapToAmt').textContent = (val * 129.935).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+});
+let swapped = false;
+function swapTokens() {
+  swapped = !swapped;
+  showToast(swapped ? 'USDC → SOL' : 'SOL → USDC');
+}
+
+// ─── REFRESH ─────────────────────────────────────────────
+function refresh() {
+  const btn = document.querySelector('.icon-btn');
+  btn.classList.add('spin');
+  setTimeout(() => btn.classList.remove('spin'), 600);
+  showToast('Portfolio refreshed ✓');
+}
+
+// ─── TOAST ───────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────
+renderTokens();
+renderHistory();
+renderSearch();
+
+// Add pull-to-refresh feel
+let startY = 0;
+const scroll = document.getElementById('mainScroll');
+scroll.addEventListener('touchstart', e => startY = e.touches[0].clientY, {passive:true});
+scroll.addEventListener('touchend', e => {
+  if (scroll.scrollTop === 0 && e.changedTouches[0].clientY - startY > 60) refresh();
+}, {passive:true});
+</script>
+</body>
+</html>
