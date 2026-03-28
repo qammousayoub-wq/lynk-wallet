@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="Phantom">
 <meta name="theme-color" content="#0a0a0a">
 <title>Phantom</title>
+<link rel="apple-touch-icon" id="appIcon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -390,9 +391,17 @@
 <div class="app">
   <!-- HEADER -->
   <div class="header">
-    <div class="header-logo">
-      <div class="logo-dot"></div>
-      <span>Phantom</span>
+    <div class="header-logo" style="gap:10px;">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="36" height="36" rx="10" fill="#4B3BFF"/>
+        <path d="M18 7C12.477 7 8 11.477 8 17v8.5c0 .828.672 1.5 1.5 1.5.828 0 1.5-.672 1.5-1.5V17c0-3.866 3.134-7 7-7s7 3.134 7 7v8.5c0 .828.672 1.5 1.5 1.5.828 0 1.5-.672 1.5-1.5V17c0-5.523-4.477-10-10-10z" fill="white" opacity="0.9"/>
+        <circle cx="14" cy="18" r="2" fill="white"/>
+        <circle cx="22" cy="18" r="2" fill="white"/>
+        <path d="M12 24c0 0 2 3 6 3s6-3 6-3" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+        <path d="M8 25.5c0 .828.672 1.5 1.5 1.5s1.5-.672 1.5-1.5v-2l-3 1v.5z" fill="white" opacity="0.6"/>
+        <path d="M25 25.5c0 .828.672 1.5 1.5 1.5s1.5-.672 1.5-1.5v-.5l-3-1v2z" fill="white" opacity="0.6"/>
+      </svg>
+      <span id="walletName" onclick="editWalletName()" style="font-size:17px;font-weight:700;cursor:pointer;letter-spacing:-0.01em;" title="Appuie pour modifier">Mon Wallet ✎</span>
     </div>
     <div class="header-actions">
       <button class="icon-btn" onclick="showToast('QR Scanner')">⊡</button>
@@ -857,6 +866,53 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
+
+// ─── WALLET NAME ─────────────────────────────────────────
+function editWalletName() {
+  const current = document.getElementById('walletName').textContent.replace(' ✎','').trim();
+  const name = prompt('Nom de ton wallet :', current);
+  if (name && name.trim()) {
+    document.getElementById('walletName').textContent = name.trim() + ' ✎';
+    localStorage.setItem('walletName', name.trim());
+    showToast('Nom mis à jour ✓');
+  }
+}
+// Restore saved name
+const savedName = localStorage.getItem('walletName');
+if (savedName) document.getElementById('walletName').textContent = savedName + ' ✎';
+
+// ─── GENERATE APPLE TOUCH ICON ───────────────────────────
+(function() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 180;
+  const ctx = c.getContext('2d');
+  // Background purple
+  const rr = (x,y,w,h,r) => { ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath(); };
+  rr(0,0,180,180,40); ctx.fillStyle='#4B3BFF'; ctx.fill();
+  // Ghost body
+  ctx.fillStyle='white';
+  ctx.beginPath();
+  ctx.arc(90,75,45,Math.PI,0,false);
+  ctx.lineTo(135,130);
+  ctx.quadraticCurveTo(126,118,117,130);
+  ctx.quadraticCurveTo(108,118,99,130);
+  ctx.quadraticCurveTo(90,118,81,130);
+  ctx.quadraticCurveTo(72,118,63,130);
+  ctx.quadraticCurveTo(54,118,45,130);
+  ctx.lineTo(45,75);
+  ctx.closePath();
+  ctx.fill();
+  // Eyes
+  ctx.fillStyle='#4B3BFF';
+  ctx.beginPath(); ctx.arc(76,80,8,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(104,80,8,0,Math.PI*2); ctx.fill();
+  // Eye shine
+  ctx.fillStyle='white';
+  ctx.beginPath(); ctx.arc(79,77,3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(107,77,3,0,Math.PI*2); ctx.fill();
+  const icon = document.getElementById('appIcon');
+  if (icon) icon.href = c.toDataURL('image/png');
+})();
 
 // ─── BOOT ─────────────────────────────────────────────────
 renderTokens();
